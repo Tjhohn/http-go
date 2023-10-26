@@ -58,25 +58,24 @@ func main() {
 	buffer := make([]byte, 1024)
 	conn.Read(buffer)
 	request := strings.Split(string(buffer), " ")
-	if strings.HasPrefix(request[1], "/") {
-		if strings.HasPrefix(request[1], "/echo/") {
-			val := request[1][6:len(request[1])]
-			contentLength := strconv.Itoa(len(val))
-			fmt.Println(val)
-			response := HTTPResponse{
-				StatusCode: 200,
-				Headers: map[string]string{
-					"Content-Type":   "text/plain",
-					"Content-Length": contentLength,
-				},
-				Body: val,
-			}
-			conn.Write([]byte(stringifyHttpResp(response)))
-		} else {
-			conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-		}
-
+	if request[1] == "/" {
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		fmt.Println("replied to valid request")
+	}
+	if strings.HasPrefix(request[1], "/echo/") {
+		val := request[1][6:len(request[1])]
+		contentLength := strconv.Itoa(len(val))
+		fmt.Println(val)
+		response := HTTPResponse{
+			StatusCode: 200,
+			Headers: map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": contentLength,
+			},
+			Body: val,
+		}
+		conn.Write([]byte(stringifyHttpResp(response)))
+		fmt.Println("replied to request : " + stringifyHttpResp(response))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		fmt.Println("replied to invalid request")
