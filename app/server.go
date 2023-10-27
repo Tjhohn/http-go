@@ -141,7 +141,12 @@ func handleConnection(conn net.Conn, dir string) {
 		filename := request.Path[7:len(request.Path)]
 
 		if request.Method == "POST" {
-			err := os.WriteFile(dir+"/"+filename, request.Body, fs.ModePerm)
+			f, err := os.Create(dir+"/"+filename)
+			if err != nil {
+				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+				return
+			}
+			_, err = f.Write(request.Body)
 			if err != nil {
 				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 				return
