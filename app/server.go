@@ -32,6 +32,7 @@ func printRequest(request HTTPRequest) {
 		fmt.Printf("%s: %s\n", key, value)
 	}
 	fmt.Println(request.Body)
+	fmt.Println(string(request.Body))
 }
 
 func parseHTTPRequest(requestString string) (*HTTPRequest, error) {
