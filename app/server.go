@@ -64,12 +64,11 @@ func parseHTTPRequest(requestString string) (*HTTPRequest, error) {
 	}
 
 	// gets body
-	// bodyBytes, _ := io.ReadAll(reader)
 	var bodyBytes []byte
 	for {
 		b, err := reader.ReadByte()
 		if err != nil || b == 0 {
-			break // End of body or null byte found
+			break // End of body or null byte
 		}
 		bodyBytes = append(bodyBytes, b)
 	}
