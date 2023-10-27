@@ -100,34 +100,19 @@ func stringifyHttpResp(resp HTTPResponse) string {
 	return statusline + headers + resp.Body
 }
 
-func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
-
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
-	if err != nil {
-		fmt.Println("Failed to bind to port 4221")
-		os.Exit(1)
-	}
-
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
-	defer conn.Close()
+func handleConnection(conn net.Conn) {
+	defer conn.Close() // unsure if this works like this but?
 	fmt.Println("connection made")
 
 	buffer := make([]byte, 1024)
 	conn.Read(buffer)
-	request := strings.Split(string(buffer), " ")
-	request_new, _ := parseHTTPRequest(string(buffer))
-	printRequest(*request_new)
-	if request[1] == "/" {
+	request, _ := parseHTTPRequest(string(buffer))
+	printRequest(*request)
+	if request.Path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		fmt.Println("replied to valid request")
-	} else if request_new.Path == "/user-agent" {
-		var userAgent string = request_new.Headers["User-Agent"]
+	} else if request.Path == "/user-agent" {
+		var userAgent string = request.Headers["User-Agent"]
 		contentLength := strconv.Itoa(len(userAgent))
 
 		response := HTTPResponse{
@@ -139,8 +124,8 @@ func main() {
 			Body: userAgent,
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
-	} else if strings.HasPrefix(request[1], "/echo/") {
-		val := request[1][6:len(request[1])]
+	} else if strings.HasPrefix(request.Path, "/echo/") {
+		val := request.Path[6:len(request.Path)]
 		contentLength := strconv.Itoa(len(val))
 		fmt.Println(val)
 		response := HTTPResponse{
@@ -157,4 +142,25 @@ func main() {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		fmt.Println("replied to invalid request")
 	}
+}
+
+func main() {
+	// You can use print statements as follows for debugging, they'll be visible when running tests.
+	fmt.Println("Logs from your program will appear here!")
+
+	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	if err != nil {
+		fmt.Println("Failed to bind to port 4221")
+		os.Exit(1)
+	}
+
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)
+	}
+
 }
