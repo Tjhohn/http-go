@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strconv"
@@ -12,6 +14,67 @@ type HTTPResponse struct {
 	StatusCode int
 	Headers    map[string]string
 	Body       string
+}
+
+type HTTPRequest struct {
+	Method  string
+	Path    string
+	Version string
+	Headers map[string]string
+	Body    string
+}
+
+func printRequest(request HTTPRequest) {
+	fmt.Println(request.Method + " " + request.Path + " " + request.Version)
+	for key, value := range request.Headers {
+		fmt.Printf("%s: %s\n", key, value)
+	}
+	fmt.Println(request.Body)
+}
+
+func parseHTTPRequest(requestString string) (*HTTPRequest, error) {
+	reader := bufio.NewReader(strings.NewReader(requestString))
+
+	// gets request line
+	requestLine, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, fmt.Errorf("have to have this")
+	}
+
+	requestLineParts := strings.Fields(requestLine)
+
+	method := requestLineParts[0]
+	path := requestLineParts[1]
+	version := requestLineParts[2]
+
+	// Reads and parses headers
+	headers := make(map[string]string)
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil || line == "\r\n" {
+			break // End of headers
+		}
+		headerParts := strings.SplitN(line, ": ", 2)
+
+		key := headerParts[0]
+		value := strings.TrimSpace(headerParts[1])
+		headers[key] = value
+	}
+
+	// gets body
+	var body string
+	bodyBytes, _ := io.ReadAll(reader)
+	if len(bodyBytes) > 0 {
+		body = string(bodyBytes)
+	}
+
+	return &HTTPRequest{
+		Method:  method,
+		Path:    path,
+		Version: version,
+		Headers: headers,
+		Body:    body,
+	}, nil
 }
 
 func statusCodeToText(code int) string {
@@ -58,11 +121,25 @@ func main() {
 	buffer := make([]byte, 1024)
 	conn.Read(buffer)
 	request := strings.Split(string(buffer), " ")
+	request_new, _ := parseHTTPRequest(string(buffer))
+	printRequest(*request_new)
 	if request[1] == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		fmt.Println("replied to valid request")
-	}
-	if strings.HasPrefix(request[1], "/echo/") {
+	} else if request_new.Path == "/user-agent" {
+		var userAgent string = request_new.Headers["User-Agent"]
+		contentLength := strconv.Itoa(len(userAgent))
+
+		response := HTTPResponse{
+			StatusCode: 200,
+			Headers: map[string]string{
+				"Content-Type":   "text/plain",
+				"Content-Length": contentLength,
+			},
+			Body: userAgent,
+		}
+		conn.Write([]byte(stringifyHttpResp(response)))
+	} else if strings.HasPrefix(request[1], "/echo/") {
 		val := request[1][6:len(request[1])]
 		contentLength := strconv.Itoa(len(val))
 		fmt.Println(val)
