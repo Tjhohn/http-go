@@ -142,21 +142,19 @@ func handleConnection(conn net.Conn) {
 		directory := flag.String("directory", "", "Specify the directory")
 		flag.Parse() // unsure what does but see it in stack
 
-		f, err := os.Open(*directory + "/" + filename)
+		f, err := os.ReadFile(*directory + "/" + filename)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		}
-		defer f.Close()
 
-		val, _ := io.ReadAll(f)
-		contentLength := strconv.Itoa(len(val))
+		contentLength := strconv.Itoa(len(f))
 		response := HTTPResponse{
 			StatusCode: 200,
 			Headers: map[string]string{
 				"Content-Type":   "application/octet-stream",
 				"Content-Length": contentLength,
 			},
-			Body: string(val),
+			Body: string(f),
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
 	} else {
