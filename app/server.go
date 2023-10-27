@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -110,7 +111,6 @@ func handleConnection(conn net.Conn) {
 	printRequest(*request)
 	if request.Path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
-		fmt.Println("replied to valid request")
 	} else if request.Path == "/user-agent" {
 		var userAgent string = request.Headers["User-Agent"]
 		contentLength := strconv.Itoa(len(userAgent))
@@ -137,7 +137,28 @@ func handleConnection(conn net.Conn) {
 			Body: val,
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
-		fmt.Println("replied to request : " + stringifyHttpResp(response))
+	} else if strings.HasPrefix(request.Path, "/files/") {
+		filename := request.Path[7:len(request.Path)]
+		directory := flag.String("directory", "", "Specify the directory")
+		flag.Parse() // unsure what does but see it in stack
+
+		f, err := os.Open(*directory + filename)
+		if err != nil {
+			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+		}
+		defer f.Close()
+
+		val, _ := io.ReadAll(f)
+		contentLength := strconv.Itoa(len(val))
+		response := HTTPResponse{
+			StatusCode: 200,
+			Headers: map[string]string{
+				"Content-Type":   "application/octet-stream",
+				"Content-Length": contentLength,
+			},
+			Body: string(val),
+		}
+		conn.Write([]byte(stringifyHttpResp(response)))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		fmt.Println("replied to invalid request")
