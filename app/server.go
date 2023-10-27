@@ -145,6 +145,7 @@ func handleConnection(conn net.Conn) {
 		f, err := os.ReadFile(*directory + "/" + filename)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+			return
 		}
 
 		contentLength := strconv.Itoa(len(f))
