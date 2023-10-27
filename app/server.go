@@ -14,7 +14,7 @@ import (
 type HTTPResponse struct {
 	StatusCode int
 	Headers    map[string]string
-	Body       string
+	Body       []byte
 }
 
 type HTTPRequest struct {
@@ -98,7 +98,7 @@ func stringifyHttpResp(resp HTTPResponse) string {
 	}
 	headers += "\r\n"
 
-	return statusline + headers + resp.Body
+	return statusline + headers + string(resp.Body)
 }
 
 func handleConnection(conn net.Conn) {
@@ -121,7 +121,7 @@ func handleConnection(conn net.Conn) {
 				"Content-Type":   "text/plain",
 				"Content-Length": contentLength,
 			},
-			Body: userAgent,
+			Body: []byte(userAgent),
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
 	} else if strings.HasPrefix(request.Path, "/echo/") {
@@ -134,7 +134,7 @@ func handleConnection(conn net.Conn) {
 				"Content-Type":   "text/plain",
 				"Content-Length": contentLength,
 			},
-			Body: val,
+			Body: []byte(val),
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
 	} else if strings.HasPrefix(request.Path, "/files/") {
@@ -154,7 +154,7 @@ func handleConnection(conn net.Conn) {
 				"Content-Type":   "application/octet-stream",
 				"Content-Length": contentLength,
 			},
-			Body: string(f),
+			Body: f,
 		}
 		conn.Write([]byte(stringifyHttpResp(response)))
 	} else {
