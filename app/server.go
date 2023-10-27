@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"net"
 	"os"
 	"strconv"
@@ -141,7 +140,7 @@ func handleConnection(conn net.Conn, dir string) {
 		filename := request.Path[7:len(request.Path)]
 
 		if request.Method == "POST" {
-			f, err := os.Create(dir+"/"+filename)
+			f, err := os.Create(dir + "/" + filename)
 			if err != nil {
 				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 				return
