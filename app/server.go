@@ -101,7 +101,7 @@ func stringifyHttpResp(resp HTTPResponse) string {
 	return statusline + headers + string(resp.Body)
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, dir string) {
 	defer conn.Close() // unsure if this works like this but?
 	fmt.Println("connection made")
 
@@ -139,10 +139,8 @@ func handleConnection(conn net.Conn) {
 		conn.Write([]byte(stringifyHttpResp(response)))
 	} else if strings.HasPrefix(request.Path, "/files/") {
 		filename := request.Path[7:len(request.Path)]
-		directory := flag.String("directory", "", "Specify the directory")
-		flag.Parse() // unsure what does but see it in stack
 
-		f, err := os.ReadFile(*directory + "/" + filename)
+		f, err := os.ReadFile(dir + "/" + filename)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 			return
@@ -174,13 +172,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	directory := flag.String("directory", "", "Specify the directory")
+	flag.Parse() // unsure what does but see it in stack
+
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			os.Exit(1)
 		}
-		go handleConnection(conn)
+		go handleConnection(conn, *directory)
 	}
 
 }
