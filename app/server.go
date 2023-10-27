@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net"
 	"os"
 	"strconv"
@@ -140,26 +141,17 @@ func handleConnection(conn net.Conn, dir string) {
 		filename := request.Path[7:len(request.Path)]
 
 		if request.Method == "POST" {
-			f, err := os.Create(dir + "/" + filename)
+			err := os.WriteFile(dir+"/"+filename, request.Body, fs.ModePerm)
 			if err != nil {
 				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 				return
 			}
-			_, err = f.Write(request.Body)
-			if err != nil {
-				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
-				return
+			response := HTTPResponse{
+				StatusCode: 201,
+				Headers:    map[string]string{},
+				Body:       nil,
 			}
-			// response := HTTPResponse{
-			// 	StatusCode: 201,
-			// 	Headers:    map[string]string{},
-			// 	Body:       nil,
-			// }
-			// conn.Write([]byte(stringifyHttpResp(response)))
-			var b bytes.Buffer
-			b.WriteString("HTTP/1.1 201 Created\r\n\r\n")
-			conn.Write(b.Bytes())
-
+			conn.Write([]byte(stringifyHttpResp(response)))
 		} else {
 			f, err := os.ReadFile(dir + "/" + filename)
 			if err != nil {
