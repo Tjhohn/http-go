@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -144,12 +145,15 @@ func handleConnection(conn net.Conn, dir string) {
 				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 				return
 			}
-			response := HTTPResponse{
-				StatusCode: 201,
-				Headers:    map[string]string{},
-				Body:       nil,
-			}
-			conn.Write([]byte(stringifyHttpResp(response)))
+			// response := HTTPResponse{
+			// 	StatusCode: 201,
+			// 	Headers:    map[string]string{},
+			// 	Body:       nil,
+			// }
+			// conn.Write([]byte(stringifyHttpResp(response)))
+			var b bytes.Buffer
+			b.WriteString("HTTP/1.1 201 Created\r\n\r\n")
+			conn.Write(b.Bytes())
 
 		} else {
 			f, err := os.ReadFile(dir + "/" + filename)
