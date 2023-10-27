@@ -143,7 +143,7 @@ func handleConnection(conn net.Conn, dir string) {
 				return
 			}
 			response := HTTPResponse{
-				StatusCode: 202,
+				StatusCode: 201,
 				Headers: map[string]string{
 					"Content-Type": "application/octet-stream",
 				},
