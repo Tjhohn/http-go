@@ -142,7 +142,7 @@ func handleConnection(conn net.Conn) {
 		directory := flag.String("directory", "", "Specify the directory")
 		flag.Parse() // unsure what does but see it in stack
 
-		f, err := os.Open(*directory + filename)
+		f, err := os.Open(*directory + "/" + filename)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		}
