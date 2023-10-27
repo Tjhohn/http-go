@@ -78,6 +78,8 @@ func statusCodeToText(code int) string {
 	switch code {
 	case 200:
 		return "OK"
+	case 201:
+		return "CREATED"
 	case 404:
 		return "NOT FOUND"
 	default:
