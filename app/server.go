@@ -146,10 +146,8 @@ func handleConnection(conn net.Conn, dir string) {
 			}
 			response := HTTPResponse{
 				StatusCode: 201,
-				Headers: map[string]string{
-					"Content-Type": "application/octet-stream",
-				},
-				Body: nil,
+				Headers:    map[string]string{},
+				Body:       nil,
 			}
 			conn.Write([]byte(stringifyHttpResp(response)))
 
