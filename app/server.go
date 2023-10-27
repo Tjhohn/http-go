@@ -22,7 +22,7 @@ type HTTPRequest struct {
 	Path    string
 	Version string
 	Headers map[string]string
-	Body    string
+	Body    []byte
 }
 
 func printRequest(request HTTPRequest) {
@@ -63,18 +63,14 @@ func parseHTTPRequest(requestString string) (*HTTPRequest, error) {
 	}
 
 	// gets body
-	var body string
 	bodyBytes, _ := io.ReadAll(reader)
-	if len(bodyBytes) > 0 {
-		body = string(bodyBytes)
-	}
 
 	return &HTTPRequest{
 		Method:  method,
 		Path:    path,
 		Version: version,
 		Headers: headers,
-		Body:    body,
+		Body:    bodyBytes,
 	}, nil
 }
 
@@ -140,22 +136,39 @@ func handleConnection(conn net.Conn, dir string) {
 	} else if strings.HasPrefix(request.Path, "/files/") {
 		filename := request.Path[7:len(request.Path)]
 
-		f, err := os.ReadFile(dir + "/" + filename)
-		if err != nil {
-			conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
-			return
-		}
+		if request.Method == "POST" {
+			err := os.WriteFile(dir+"/"+filename, request.Body, 0666)
+			if err != nil {
+				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+				return
+			}
+			response := HTTPResponse{
+				StatusCode: 202,
+				Headers: map[string]string{
+					"Content-Type": "application/octet-stream",
+				},
+				Body: nil,
+			}
+			conn.Write([]byte(stringifyHttpResp(response)))
 
-		contentLength := strconv.Itoa(len(f))
-		response := HTTPResponse{
-			StatusCode: 200,
-			Headers: map[string]string{
-				"Content-Type":   "application/octet-stream",
-				"Content-Length": contentLength,
-			},
-			Body: f,
+		} else {
+			f, err := os.ReadFile(dir + "/" + filename)
+			if err != nil {
+				conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
+				return
+			}
+
+			contentLength := strconv.Itoa(len(f))
+			response := HTTPResponse{
+				StatusCode: 200,
+				Headers: map[string]string{
+					"Content-Type":   "application/octet-stream",
+					"Content-Length": contentLength,
+				},
+				Body: f,
+			}
+			conn.Write([]byte(stringifyHttpResp(response)))
 		}
-		conn.Write([]byte(stringifyHttpResp(response)))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 NOT FOUND\r\n\r\n"))
 		fmt.Println("replied to invalid request")
